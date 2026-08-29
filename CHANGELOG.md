@@ -1,0 +1,96 @@
+# TradeSignal NextGen — Change Log
+
+## 2026-08-29 — Git Configuration & Governance for `NxTrd` Repository
+
+**Goal:** Configure git tracking in `NextGen/` to target exclusively the `NxTrd` remote repository (`https://github.com/novatechnolab/NxTrd.git`) and update workspace governance rules.
+
+**Files Changed / Added:**
+- `NextGen/.agents/AGENTS.md` — Updated **Repository & Commit Discipline** rule to target `NxTrd` (`https://github.com/novatechnolab/NxTrd.git`).
+- `NextGen/.gitignore` — Created repository `.gitignore` for Python, Svelte/Node, environment secrets, and runtime data.
+- Git configuration — Initialized git in `NextGen/` with remotes `origin` and `nxtrd` set to `https://github.com/novatechnolab/NxTrd.git`.
+
+---
+
+**Goal:** Provide automated setup for Android Termux and universal one-command execution via `nxtrd` with automatic virtual environment activation, wake-lock acquisition, device IP resolution, and background `tmux` runner support.
+
+**Files Created:**
+- `NextGen/nxtrd` — Universal executable server launcher with IP detection and wake-lock management (`chmod +x`).
+- `NextGen/setup_termux.sh` — Automated one-time Termux installer configuring TUR repo, precompiled ARM64 numpy/pandas, `.venv`, and linking global `$PREFIX/bin/nxtrd`.
+- `NextGen/start_termux.sh` — Background persistent `tmux` session runner with automatic restart resilience.
+
+---
+
+## 2026-08-29 — Rebranding to Nxtrd Across NextGen
+
+**Goal:** Rebrand the application to **Nxtrd** across all user-facing frontend components, headers, browser titles, metadata, package configuration, and backend API service definitions.
+
+**Files Changed:**
+- `NextGen/frontend/src/lib/components/Sidebar.svelte` — Updated navigation brand header title to `Nxtrd`.
+- `NextGen/frontend/src/routes/360-command-center/_components/TopBar360.svelte` — Updated brand logo badge to `NX` and brand title to `Nxtrd`.
+- `NextGen/frontend/src/routes/360-command-center/+page.svelte` — Updated page `<title>` to `360° Command Center — Nxtrd`.
+- `NextGen/frontend/src/app.html` & `NextGen/frontend/index.html` — Updated root document title to `Nxtrd — NSE F&O Intelligence`.
+- `NextGen/frontend/package.json` — Updated package name to `nxtrd-frontend`.
+- `NextGen/backend/server.py` — Updated FastAPI application title to `Nxtrd API`.
+- `NextGen/backend/routers/ws.py` — Updated WebSocket connection acknowledgement message to `Connected to Nxtrd Live Stream`.
+
+---
+
+## 2026-08-29 — Market Hours Schedule Updated to 09:15–15:40 IST
+
+**Goal:** Extend live market hours window to 09:15–15:40 IST across backend agent loops and frontend session detectors to maintain real-time high-frequency streaming and prevent premature EOD mode transitions through the post-market closing auction.
+
+**Files Changed:**
+- `NextGen/backend/core/utils.py` — Updated `is_market_hours()` upper limit to `time(15, 40)`.
+- `NextGen/backend/routers/market.py` — Updated `GET /api/market-status` session boundary to `15 * 60 + 40` (15:40 IST).
+- `NextGen/frontend/src/routes/360-command-center/+page.svelte` — Updated `isMarketOpen()` to `mins <= 940` (15:40 IST).
+
+---
+
+## 2026-08-29 — Full-Bleed 360 Command Center & Edge-Hover Auto-Hide Sidebar
+
+**Goal:** Provide maximum full-screen viewport space for 360 Command Center by eliminating the redundant global top header on the route, removing page-level padding, and configuring the left navigation sidebar to auto-hide by default with smooth slide-out reveal when hovering near the left edge (< 16px).
+
+**Files Changed:**
+- `NextGen/frontend/src/lib/components/Sidebar.svelte` — Added `isAutoHide` and `isHoverOpen` props, binding hover detection and applying overlay transformation styles (`transform: translateX(-100%)` → `translateX(0)`).
+- `NextGen/frontend/src/routes/+layout.svelte` — Conditionally suppressed global `<Topbar>` on `/360-command-center`, applied full-bleed zero-padding wrapper, and installed the invisible left-edge trigger zone.
+
+---
+
+## 2026-08-29 — Column 3: Live Breakouts, Squeeze & EMA Coil Watchlists & Session Stats Integration
+
+**Goal:** Restore Column 3 in 360 Command Center to render genuine live breakout and EMA collision alerts (116 alerts), Squeeze Watchlist (0), EMA Coil Watchlist (51 coils with real spot prices & gap delta), and live 4-card Session Stats matching the reference implementation and visual design.
+
+**Files Changed:**
+- `NextGen/backend/agents/ema_agent.py` — In `get_live_breakouts()`, enriched `ema_coils` with live spot price (`last_ltp`) looked up from the latest futures buildup snapshot map, and updated query limit to capture up to 200 session alerts.
+- `NextGen/frontend/src/routes/360-command-center/+page.svelte` — Captured full `liveBreakoutData` payload (`triggered_alerts`, `collision_alerts`, `bb_squeezes`, `ema_coils`), computed reactive dynamic `sessionStats` (Alerts Today, OI Spurts, Long B/U, Short B/U), and passed props to `<RightPanel>`.
+- `NextGen/frontend/src/routes/360-command-center/_components/RightPanel.svelte` — Completely rebuilt Column 3 with:
+  1. Section 1 (Live Breakouts): Merged `triggered_alerts` + `collision_alerts` with directional arrows (`▲`/`▼`), badges (`Grade A`, `5M Cross`, `EMA COLLISION`), exact timestamps, LTP (`₹2608.7`), and volume multipliers (`×747.3`).
+  2. Section 2 (Squeeze Watchlist): Amber/gold squeeze badge, LTP, duration, and empty state ("No active squeezes").
+  3. Section 3 (EMA Coil Watchlist): Cyan coil icon `⟳`, symbol, `Coil` badge, LTP, delta gap pill (`- Δ0.050%`), and trigger time (`15:25`) for all 51 coils.
+  4. Section 4 (Confluence Rules & Session Stats): Confluence rule scores and 4-card live Session Stats grid matching the reference UI.
+
+---
+
+## 2026-08-29 — Zero-Mock Policy Enforcement & Real Historical Candlestick Chart Integration
+
+**Goal:** Completely eliminate synthetic/dummy candle generator from the Master Board inline chart in Futures Buildup, enforce universal Zero-Mock policy with explicit error banners, connect backend SQLite DB to 56k instruments and 147k cached OHLCVs, and register `GET /api/historical`.
+
+**Files Changed:**
+- `NextGen/.agents/AGENTS.md` — Enshrined universal **Zero Mock / Zero Synthetic Data Discipline** prohibiting mock or synthetic fallbacks across all features without exception.
+- `NextGen/backend/core/db.py` — Updated `DB_PATH` default resolution to load `tradesignal_cache.db` (56,765 instruments + 147,185 OHLCV records).
+- `NextGen/backend/routers/core.py` — Registered `GET /api/historical` route delegating queries to `KiteDataAgent.get_historical()` with smart caching.
+- `NextGen/backend/agents/kite_data_agent.py` — Extended default intraday query window to 10 days for robust off-hours and weekend cache retrieval.
+- `NextGen/backend/repositories/ohlcv.py` — Added latest session fallback for out-of-market intraday queries.
+- `NextGen/frontend/src/routes/360-command-center/_components/MasterBoard.svelte` — Purged all synthetic candle generators; integrated real OHLCV data parsing, EMA 9/21, VWAP, and added explicit error state banner when historical data is missing.
+
+---
+
+## 2026-08-29 — Breakouts Tab Data Accuracy, Labels & Real Triggered Alerts Integration
+
+**Goal:** Fix Screen 3 (Breakouts) in 360 Command Center Alert Feed to render genuine breakout alerts (`triggered_alerts`), accurate price move percentages (`move_pct`), volume surge multipliers (`vol_multiplier`), real timestamps (`time`), and proper grade tags (`5M Cross`, `Grade A`) matching the reference implementation.
+
+**Files Changed:**
+- `NextGen/backend/agents/ema_agent.py` — Implemented `get_live_breakouts()` returning actual triggered breakout alerts from SQLite table with real spot movement percentage and volume multipliers.
+- `NextGen/backend/routers/analytics.py` — Wired `GET /live-breakouts` to call `EmaAgent.get_live_breakouts()` directly.
+- `NextGen/frontend/src/routes/360-command-center/+page.svelte` — Extracted `triggered_alerts` from `/api/live-breakouts` and passed `breakoutAlerts` to `<AlertFeed>`.
+- `NextGen/frontend/src/routes/360-command-center/_components/AlertFeed.svelte` — Bound `breakoutGroups` to `breakoutAlerts`, formatting price moves (`Mv +X.XX%`), volume ratios (`Vol X.Xx`), exact event timestamps, and grade tags.

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# ╔══════════════════════════════════════════════════════╗
+# ║   Nxtrd — Universal Server Launcher                  ║
+# ║   Usage: nxtrd [options]                             ║
+# ╚══════════════════════════════════════════════════════╝
+
+set -e
+
+# Resolve repository root directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$DIR"
+
+# Acquire Termux wake lock if running on Android
+if [ -d "/data/data/com.termux" ]; then
+    termux-wake-lock 2>/dev/null || true
+    # Prevent missing symbol crash in certain Termux Python builds
+    PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "3.12")
+    if [ -f "/data/data/com.termux/files/usr/lib/libpython${PY_VER}.so" ]; then
+        export LD_PRELOAD="/data/data/com.termux/files/usr/lib/libpython${PY_VER}.so"
+    fi
+fi
+
+# Activate Python virtual environment if present
+if [ -f "$DIR/.venv/bin/activate" ]; then
+    source "$DIR/.venv/bin/activate"
+elif [ -f "$DIR/../.venv/bin/activate" ]; then
+    source "$DIR/../.venv/bin/activate"
+fi
+
+# Detect local network IP for easy access from other devices (tablets, phones, laptops)
+IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}' || ip -4 addr show 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -n 1 || echo "localhost")
+
+# Port definition
+PORT="${PORT:-5000}"
+
+echo -e "\033[1;36m"
+echo "  ╔══════════════════════════════════════════════════════╗"
+echo "  ║                   NXTRD LIVE SERVER                  ║"
+echo "  ╚══════════════════════════════════════════════════════╝"
+echo -e "\033[0m"
+echo -e "  \033[1;32m➜ App URL (Local):\033[0m   http://localhost:${PORT}/360-command-center/"
+if [ "$IP_ADDR" != "localhost" ] && [ -n "$IP_ADDR" ]; then
+echo -e "  \033[1;32m➜ App URL (Network):\033[0m http://${IP_ADDR}:${PORT}/360-command-center/"
+fi
+echo -e "  \033[1;34m➜ API Docs:\033[0m          http://localhost:${PORT}/docs"
+echo -e "  \033[1;33m➜ WebSocket:\033[0m         ws://localhost:${PORT}/ws/live"
+echo ""
+
+# Execute Uvicorn server
+exec python3 -m uvicorn --app-dir "$DIR/backend" server:app --host 0.0.0.0 --port "$PORT" --reload --reload-dir "$DIR/backend" "$@"

@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Node / Frontend
+node_modules/
+.svelte-kit/
+dist/
+build/
+.npm
+*.log
+
+# IDE & Gemini / Antigravity
+.gemini/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.kite_session.json
+backend/.kite_session.json
+
+# Data & Caches
+*.sqlite3
+*.db
+backend/data/*.json
+!backend/data/default_*.json
+logs/
+*.log

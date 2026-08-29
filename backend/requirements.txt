@@ -1,0 +1,20 @@
+# TradeSignal NextGen — Requirements
+# Works on: Linux laptop + Termux (Android ARM64)
+# No gevent, no gunicorn, no waitress — uvicorn asyncio handles all platforms
+
+fastapi>=0.111.0
+uvicorn>=0.30.0
+python-multipart>=0.0.9
+
+# Kite (unchanged from reference)
+kiteconnect>=5.0.1
+
+# Shared with reference workspace
+python-dotenv>=1.0.1
+requests>=2.31.0
+pytz>=2024.1
+feedparser>=6.0.11
+
+# Termux note: numpy + pandas installed via pkg (TUR repo), not pip
+# numpy>=1.26  # use: pkg install python-numpy
+# pandas>=2.0  # use: pkg install python-pandas
