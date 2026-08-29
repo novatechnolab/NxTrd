@@ -1,5 +1,16 @@
 # TradeSignal NextGen — Change Log
 
+## 2026-08-29 — Uvicorn & WebSocket Dependencies Permanent Fix for Termux & Cross-Platform
+
+**Goal:** Ensure `uvicorn[standard]` and `websockets` are explicitly defined in `requirements.txt`, installed in `setup_termux.sh`, and automatically recovered on first launch in `nxtrd`.
+
+**Files Changed:**
+- `NextGen/backend/requirements.txt` — Added `uvicorn[standard]>=0.30.0` and `websockets>=12.0`.
+- `NextGen/setup_termux.sh` — Added explicit installation of `uvicorn[standard]` and `websockets`.
+- `NextGen/nxtrd` — Added automatic fallback check to self-install `uvicorn` and `websockets` if missing before server launch.
+
+---
+
 ## 2026-08-29 — Git Configuration & Governance for `NxTrd` Repository
 
 **Goal:** Configure git tracking in `NextGen/` to target exclusively the `NxTrd` remote repository (`https://github.com/novatechnolab/NxTrd.git`) and update workspace governance rules.

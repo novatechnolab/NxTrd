@@ -65,6 +65,7 @@ section "Step 4: Upgrading pip and wheel"
 pip install --upgrade pip wheel setuptools
 
 section "Step 5: Installing Python dependencies"
+pip install "uvicorn[standard]>=0.30.0" "websockets>=12.0"
 pip install -r "$DIR/backend/requirements.txt"
 info "Python dependencies installed."
 

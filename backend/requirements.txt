@@ -3,7 +3,8 @@
 # No gevent, no gunicorn, no waitress — uvicorn asyncio handles all platforms
 
 fastapi>=0.111.0
-uvicorn>=0.30.0
+uvicorn[standard]>=0.30.0
+websockets>=12.0
 python-multipart>=0.0.9
 
 # Kite (unchanged from reference)
