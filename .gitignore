@@ -13,6 +13,7 @@ ENV/
 node_modules/
 .svelte-kit/
 dist/
+!frontend/dist/
 build/
 .npm
 *.log

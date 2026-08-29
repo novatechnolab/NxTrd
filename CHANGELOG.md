@@ -1,5 +1,18 @@
 # TradeSignal NextGen — Change Log
 
+## 2026-08-30 — Termux Global Symlink Resolution & Pre-Built UI Bundle Tracking
+
+**Goal:** Resolve Termux global symlink execution path bug (`/data/data/com.termux/files/usr/bin/backend`), track pre-built `frontend/dist` in repository for zero-build mobile deployment, and unify default port to 5000.
+
+**Files Changed / Added:**
+- `NextGen/nxtrd` — Implemented recursive symlink resolution to find true repository folder regardless of symlink execution path.
+- `NextGen/start_termux.sh` — Implemented recursive symlink resolution for background session runner.
+- `NextGen/.gitignore` — Whitelisted `!frontend/dist/` to include pre-built UI bundle.
+- `NextGen/frontend/dist/` — Built and committed full static SvelteKit distribution bundle.
+- `NextGen/backend/server.py` — Unified default fallback port to `PORT=5000`.
+
+---
+
 ## 2026-08-29 — Uvicorn & WebSocket Dependencies Permanent Fix for Termux & Cross-Platform
 
 **Goal:** Ensure `uvicorn[standard]` and `websockets` are explicitly defined in `requirements.txt`, installed in `setup_termux.sh`, and automatically recovered on first launch in `nxtrd`.

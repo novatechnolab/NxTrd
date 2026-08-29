@@ -6,8 +6,14 @@
 
 set -e
 
-# Resolve repository root directory
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+# Resolve repository root directory (following symlinks recursively)
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+    DIR="$( cd -P "$( dirname "$SOURCE" )" &> /dev/null && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" &> /dev/null && pwd )"
 cd "$DIR"
 
 # Acquire Termux wake lock if running on Android
