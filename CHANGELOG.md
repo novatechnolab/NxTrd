@@ -1,5 +1,14 @@
 # TradeSignal NextGen — Change Log
 
+## 2026-08-30 — Modern FastAPI Lifespan Handler Migration
+
+**Goal:** Replace deprecated `@app.on_event("startup")` and `@app.on_event("shutdown")` in `server.py` with FastAPI's official `@asynccontextmanager` lifespan handler to eliminate startup deprecation warnings.
+
+**Files Changed:**
+- `NextGen/backend/server.py` — Implemented `@asynccontextmanager async def lifespan(app: FastAPI)` managing `init_db()` and `AgentOrchestrator` startup/shutdown cleanly.
+
+---
+
 ## 2026-08-30 — Termux Global Symlink Resolution & Pre-Built UI Bundle Tracking
 
 **Goal:** Resolve Termux global symlink execution path bug (`/data/data/com.termux/files/usr/bin/backend`), track pre-built `frontend/dist` in repository for zero-build mobile deployment, and unify default port to 5000.

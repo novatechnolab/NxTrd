@@ -4,6 +4,7 @@ Nxtrd — Entry Point
 Zero business logic. Mounts domain routers. Starts AgentOrchestrator.
 """
 import os
+from contextlib import asynccontextmanager
 
 # ── Load .env configuration ───────────────────────────────────────────
 def _load_env():
@@ -53,29 +54,7 @@ from routers import (
     screener, futures, ws
 )
 
-app = FastAPI(title="Nxtrd API", version="2.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
-# ── Mount Routers ─────────────────────────────────────────────────────
-# Rule: Routers ONLY delegate to agents/repos. No business logic here.
-for router, prefix in [
-    (core.router,        "/api"),
-    (kite.router,        "/kite"),
-    (board.router,       "/api"),
-    (alerts.router,      "/api"),
-    (oi.router,          "/api"),
-    (market.router,      "/api"),
-    (options.router,     "/api"),
-    (analytics.router,   "/api"),
-    (instruments.router, "/api"),
-    (portfolio.router,   "/api"),
-    (screener.router,    "/api"),
-    (futures.router,     "/api"),
-    (ws.router,          ""),
-]:
-    app.include_router(router, prefix=prefix)
-
-# ── Agent Lifecycle ───────────────────────────────────────────────────
+# ── Agent Lifecycle & Orchestration ───────────────────────────────────
 _bus = EventBus()
 _orchestrator = AgentOrchestrator(_bus)
 
@@ -108,6 +87,16 @@ _orchestrator.register(_fno_trap_agent)
 _orchestrator.register(_prediction_agent)
 _orchestrator.register(_alert_dispatch_agent)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    await _orchestrator.start()
+    yield
+    await _orchestrator.stop()
+
+app = FastAPI(title="Nxtrd API", version="2.0.0", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
 app.state.bus = _bus
 app.state.orchestrator = _orchestrator
 app.state.kite_data_agent = _kite_data_agent
@@ -122,14 +111,23 @@ app.state.fno_trap_agent = _fno_trap_agent
 app.state.prediction_agent = _prediction_agent
 app.state.alert_dispatch_agent = _alert_dispatch_agent
 
-@app.on_event("startup")
-async def startup():
-    init_db()
-    await _orchestrator.start()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await _orchestrator.stop()
+# ── Mount Routers ─────────────────────────────────────────────────────
+for router, prefix in [
+    (core.router,        "/api"),
+    (kite.router,        "/kite"),
+    (board.router,       "/api"),
+    (alerts.router,      "/api"),
+    (oi.router,          "/api"),
+    (market.router,      "/api"),
+    (options.router,     "/api"),
+    (analytics.router,   "/api"),
+    (instruments.router, "/api"),
+    (portfolio.router,   "/api"),
+    (screener.router,    "/api"),
+    (futures.router,     "/api"),
+    (ws.router,          ""),
+]:
+    app.include_router(router, prefix=prefix)
 
 # ── Serve SvelteKit Frontend ──────────────────────────────────────────
 DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
