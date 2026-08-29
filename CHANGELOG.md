@@ -1,5 +1,16 @@
 # TradeSignal NextGen — Change Log
 
+## 2026-08-30 — Dependent SQLite Tables Schema Initialization Fix
+
+**Goal:** Ensure all dependent snapshot, alert history, and OI spurt tables (`fno_futures_buildup_snapshot`, `fno_gainers_snapshots`, `premium_spike_alerts`, `live_breakout_alerts`, `oi_spurt_log`) are created during `init_db()` and in `setup_termux.sh`.
+
+**Files Changed:**
+- `NextGen/backend/core/db.py` — Added DDL statements and time-series indexes for all snapshot and alert tracking tables.
+- `NextGen/setup_termux.sh` — Added explicit Step 6 to run `init_db()` upon setup.
+- `NextGen/backend/tests/test_week2_core.py` — Added assertions verifying all 12 core and snapshot tables are initialized.
+
+---
+
 ## 2026-08-30 — Modern FastAPI Lifespan Handler Migration
 
 **Goal:** Replace deprecated `@app.on_event("startup")` and `@app.on_event("shutdown")` in `server.py` with FastAPI's official `@asynccontextmanager` lifespan handler to eliminate startup deprecation warnings.

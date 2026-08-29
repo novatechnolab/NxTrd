@@ -69,7 +69,11 @@ pip install "uvicorn[standard]>=0.30.0" "websockets>=12.0"
 pip install -r "$DIR/backend/requirements.txt"
 info "Python dependencies installed."
 
-section "Step 6: Configuring global 'nxtrd' command"
+section "Step 6: Initializing SQLite database schema"
+python3 -c "import sys; sys.path.insert(0, '$DIR/backend'); from core.db import init_db; init_db()"
+info "Database schema initialized with all dependent tables and indexes."
+
+section "Step 7: Configuring global 'nxtrd' command"
 # Create a symlink in Termux's $PREFIX/bin so typing 'nxtrd' anywhere works
 PREFIX_BIN="/data/data/com.termux/files/usr/bin"
 if [ -d "$PREFIX_BIN" ]; then

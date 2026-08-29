@@ -56,6 +56,12 @@ class TestWeek2CoreAndRepositories(unittest.TestCase):
         self.assertIn("notes", tables)
         self.assertIn("stored_news", tables)
         self.assertIn("fno_shareholding", tables)
+        self.assertIn("first_hour_predictions", tables)
+        self.assertIn("fno_futures_buildup_snapshot", tables)
+        self.assertIn("fno_gainers_snapshots", tables)
+        self.assertIn("premium_spike_alerts", tables)
+        self.assertIn("live_breakout_alerts", tables)
+        self.assertIn("oi_spurt_log", tables)
 
         # Check WAL mode
         mode = self.db.execute("PRAGMA journal_mode").fetchone()[0]

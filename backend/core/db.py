@@ -168,6 +168,72 @@ def init_db(db_path: str = None):
             UNIQUE(date, symbol)
         );
 
+        CREATE TABLE IF NOT EXISTS fno_futures_buildup_snapshot (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            date         TEXT,
+            timestamp    TEXT,
+            payload_json TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS fno_gainers_snapshots (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_date TEXT UNIQUE NOT NULL,
+            snapshot_json TEXT NOT NULL,
+            updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS premium_spike_alerts (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            alert_date        TEXT NOT NULL,
+            alert_time        TEXT NOT NULL,
+            timestamp         REAL NOT NULL,
+            token             INTEGER NOT NULL,
+            symbol            TEXT NOT NULL,
+            tradingsymbol     TEXT NOT NULL,
+            opt_type          TEXT NOT NULL,
+            strike            REAL NOT NULL,
+            label             TEXT,
+            layer             TEXT,
+            direction         TEXT,
+            open_prem         REAL,
+            old_ltp           REAL,
+            ltp               REAL,
+            premium_spike_pct REAL,
+            board_gain_pct    REAL,
+            old_spot          REAL,
+            spot              REAL,
+            spot_spike_pct    REAL,
+            interval_volume   INTEGER,
+            consistency       REAL,
+            is_eod_snapshot   INTEGER DEFAULT 0,
+            created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(alert_date, token, alert_time) ON CONFLICT IGNORE
+        );
+
+        CREATE TABLE IF NOT EXISTS live_breakout_alerts (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            alert_date     TEXT NOT NULL,
+            alert_time     TEXT NOT NULL,
+            timestamp      REAL NOT NULL,
+            symbol         TEXT NOT NULL,
+            direction      TEXT,
+            grade          TEXT,
+            ltp            REAL,
+            vol_multiplier REAL,
+            move_pct       REAL,
+            trigger_epoch  REAL,
+            created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(alert_date, symbol, grade, alert_time) ON CONFLICT IGNORE
+        );
+
+        CREATE TABLE IF NOT EXISTS oi_spurt_log (
+            date          TEXT NOT NULL,
+            symbol        TEXT NOT NULL,
+            spurt_time    TEXT NOT NULL,
+            oi_change_pct REAL NOT NULL,
+            PRIMARY KEY (date, symbol)
+        );
+
         -- Time-series indexes — critical for latency parity on queries
         CREATE INDEX IF NOT EXISTS idx_ohlcv_token_interval ON ohlcv(instrument_token, interval);
         CREATE INDEX IF NOT EXISTS idx_ohlcv_date ON ohlcv(date);
@@ -176,6 +242,13 @@ def init_db(db_path: str = None):
         CREATE INDEX IF NOT EXISTS idx_instruments_segment ON instruments(segment);
         CREATE INDEX IF NOT EXISTS idx_fno_alerts_time ON fno_alerts(scanned_at);
         CREATE INDEX IF NOT EXISTS idx_stored_news_time ON stored_news(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_ffbs_date ON fno_futures_buildup_snapshot(date);
+        CREATE INDEX IF NOT EXISTS idx_fgs_date ON fno_gainers_snapshots(snapshot_date);
+        CREATE INDEX IF NOT EXISTS idx_psa_date ON premium_spike_alerts(alert_date);
+        CREATE INDEX IF NOT EXISTS idx_psa_symbol ON premium_spike_alerts(symbol);
+        CREATE INDEX IF NOT EXISTS idx_lba_date ON live_breakout_alerts(alert_date);
+        CREATE INDEX IF NOT EXISTS idx_lba_symbol ON live_breakout_alerts(symbol);
+        CREATE INDEX IF NOT EXISTS idx_osl_date ON oi_spurt_log(date);
     ''')
     conn.commit()
 
