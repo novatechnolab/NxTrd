@@ -30,6 +30,8 @@
 
   $: activePath = $page.url.pathname.replace(/\/$/, '') || '/';
   $: is360 = activePath === '/360-command-center' || activePath.startsWith('/360-command-center');
+  $: isOI  = activePath === '/oi-spurt-scanner'  || activePath.startsWith('/oi-spurt-scanner');
+  $: isFullBleed = is360 || isOI;
   $: activeTitle = routeTitles[activePath] || 'Settings';
 
   function handleNavigate(id) {
@@ -63,36 +65,29 @@
 </script>
 
 <div class="app-container" class:is-360={is360}>
-  <!-- Left edge hover detector zone when in 360 Command Center mode -->
-  {#if is360}
-    <div 
-      class="edge-trigger-zone"
-      on:mouseenter={handleEdgeEnter}
-      aria-hidden="true"
-    ></div>
+  <!-- Sidebar Navigation (Omitted on standalone full-bleed pages) -->
+  {#if !isFullBleed}
+    <Sidebar
+      activeRoute={activePath.replace('/', '') || 'settings'}
+      isOpen={isMobileSidebarOpen}
+      isAutoHide={false}
+      isHoverOpen={false}
+      onNavigate={handleNavigate}
+      onMouseEnter={handleSidebarEnter}
+      onMouseLeave={handleSidebarLeave}
+    />
   {/if}
 
-  <!-- Sidebar Navigation -->
-  <Sidebar
-    activeRoute={activePath.replace('/', '') || 'settings'}
-    isOpen={isMobileSidebarOpen}
-    isAutoHide={is360}
-    isHoverOpen={isSidebarHovered}
-    onNavigate={handleNavigate}
-    onMouseEnter={handleSidebarEnter}
-    onMouseLeave={handleSidebarLeave}
-  />
-
   <!-- Main View Area -->
-  <main class="main-content" class:full-bleed={is360}>
-    {#if !is360}
+  <main class="main-content" class:full-bleed={isFullBleed}>
+    {#if !isFullBleed}
       <Topbar
         title={activeTitle}
         onMenuToggle={() => (isMobileSidebarOpen = !isMobileSidebarOpen)}
       />
     {/if}
 
-    <div class="page-wrapper {is360 ? 'full-bleed' : ''}">
+    <div class="page-wrapper {isFullBleed ? 'full-bleed' : ''}">
       <slot />
     </div>
   </main>

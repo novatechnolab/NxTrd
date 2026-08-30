@@ -466,6 +466,102 @@ class OiTransitionAgent(BaseAgent):
             "fetched_at": now_ist().isoformat(),
         }
 
+    # ── AI Heatmap Analysis ─────────────────────────────────────────────
+
+    async def ai_analyze(self, symbol: str, body: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Analyze OI Chain Heatmap using Gemini AI.
+        Ported from: oi_spurt_routes.py L1901 ai_analyze_heatmap()
+        """
+        import json as _json
+        import urllib.request
+        import urllib.error
+
+        api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+        if not api_key or api_key == "your_gemini_api_key_here":
+            return {
+                "ok": False,
+                "error": "GEMINI_API_KEY not set in .env — get a free key at https://aistudio.google.com/apikey"
+            }
+
+        chain_data = body.get("chain_data", [])
+        pcr        = body.get("pcr")
+        spot       = body.get("spot")
+        max_pain   = body.get("max_pain")
+        straddle   = body.get("straddle")
+        expiry     = body.get("expiry", "–")
+        atm        = body.get("atm")
+
+        if not chain_data:
+            return {"ok": False, "error": "chain_data is empty. Load the heatmap first."}
+
+        # Build markdown table (same as reference)
+        sorted_chain = sorted(chain_data, key=lambda r: r.get("strike", 0), reverse=True)
+        header  = "| Strike | CE OI | CE ΔOI | CE Buildup | CE LTP | PE LTP | PE ΔOI | PE Buildup | PE OI | PCR |"
+        divider = "|--------|-------|--------|------------|--------|--------|--------|------------|-------|-----|"
+        rows = []
+        for r in sorted_chain:
+            strike   = r.get("strike", 0)
+            label    = f"{int(strike)}{' ◄ATM' if strike == atm else ''}{' ◄MAXPAIN' if strike == max_pain else ''}"
+            ce_oi    = f"{r.get('ce_oi', 0):,}"
+            ce_doi   = f"{r.get('ce_oi_chg', 0):+,}"
+            ce_build = r.get("ce_buildup", "–")
+            ce_ltp   = f"₹{r.get('ce_ltp', 0):.1f}"
+            pe_ltp   = f"₹{r.get('pe_ltp', 0):.1f}"
+            pe_doi   = f"{r.get('pe_oi_chg', 0):+,}"
+            pe_build = r.get("pe_buildup", "–")
+            pe_oi    = f"{r.get('pe_oi', 0):,}"
+            sp       = r.get("strike_pcr")
+            pcr_str  = f"{sp:.2f}" if sp is not None else "–"
+            rows.append(f"| {label} | {ce_oi} | {ce_doi} | {ce_build} | {ce_ltp} | {pe_ltp} | {pe_doi} | {pe_build} | {pe_oi} | {pcr_str} |")
+
+        table = "\n".join([header, divider] + rows)
+        prompt = (
+            f"## OI Chain Heatmap Analysis — {symbol}\n\n"
+            f"**Expiry:** {expiry} | **Spot/LTP:** {spot} | **ATM:** {atm} | "
+            f"**Max Pain:** {max_pain} | **Straddle:** {straddle} | **PCR:** {pcr}\n\n"
+            f"{table}\n\n"
+            "Analyze this OI chain data. Identify:\n"
+            "1. **Key Support/Resistance** — where is institutional defence?\n"
+            "2. **OI Buildup Signal** — long buildup, short covering, or unwinding?\n"
+            "3. **Max Pain vs Spot** — likely price gravitational pull direction?\n"
+            "4. **PCR Signal** — bullish/bearish/neutral with reasoning\n"
+            "5. **Actionable Insight** — concise 1-line trading bias with levels\n\n"
+            "Keep total response under 400 words. Use markdown. Be specific about strike levels."
+        )
+
+        system = (
+            "You are an expert Indian derivatives market analyst specialising in NSE F&O options chain analysis. "
+            "Provide concise, actionable insights. Use markdown formatting with clear section headers. "
+            "Be specific about strike levels. Keep total response under 400 words."
+        )
+
+        payload = {
+            "contents": [{"parts": [{"text": f"{system}\n\n{prompt}"}]}],
+            "generationConfig": {"maxOutputTokens": 600, "temperature": 0.3}
+        }
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        req = urllib.request.Request(
+            url,
+            data=_json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        try:
+            loop = asyncio.get_event_loop()
+            def _call():
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    return _json.loads(resp.read())
+            result = await loop.run_in_executor(None, _call)
+            text = result["candidates"][0]["content"]["parts"][0]["text"]
+            return {"ok": True, "analysis": text}
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="replace")
+            return {"ok": False, "error": f"Gemini API error {e.code}: {err_body[:200]}"}
+        except Exception as e:
+            return {"ok": False, "error": f"Request failed: {str(e)}"}
+
     # ── Agent FSM Main Loop ─────────────────────────────────────────────
 
     async def run(self):
@@ -486,3 +582,4 @@ class OiTransitionAgent(BaseAgent):
             except Exception as e:
                 self.record_error(str(e))
                 await asyncio.sleep(5.0)
+

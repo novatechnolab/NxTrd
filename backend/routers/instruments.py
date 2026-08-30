@@ -60,6 +60,25 @@ async def instruments_cash_symbols():
     }
 
 
+@router.get("/equity-list")
+async def equity_list():
+    """
+    F&O equity symbol list for search autocomplete.
+    Returns {stocks: [{tradingsymbol, name}]} — same shape as legacy server.py /api/equity-list.
+    Ported from: server.py L3410 equity_list()
+    """
+    fno_symbols = repo_instruments.get_fno_symbols()
+    if not fno_symbols:
+        return {
+            "error": "Instrument database not loaded. Go to Settings → Sync Instruments.",
+            "stocks": []
+        }
+    # get_fno_symbols returns List[str] of name values from NFO-FUT
+    # Expose as tradingsymbol=name, name=name — sufficient for search autocomplete
+    stocks = [{"tradingsymbol": sym, "name": sym} for sym in sorted(fno_symbols)]
+    return {"stocks": stocks, "count": len(stocks)}
+
+
 @router.post("/instruments/sync")
 async def instruments_sync(request: Request):
     """Trigger instrument database synchronization from Kite."""

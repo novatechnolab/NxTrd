@@ -162,7 +162,7 @@
       const isFhSpurt = ((s.fh_spurt_ratio ?? s.fh_signal ?? fut.fh_spurt) || 0) >= 1.0;
       const isRvolHigh = ((s.rvol_ratio ?? s.rvol ?? fut.rvol) || 1) >= 1.5;
 
-      return {
+      const row = {
         rank: i + 1,
         sym: s.symbol,
         cap: s.market_cap_category || (fut.cap ? (fut.cap.toLowerCase().includes('large') ? 'L' : fut.cap.toLowerCase().includes('small') ? 'S' : 'M') : 'L'),
@@ -187,18 +187,38 @@
         oiChg: parseFloat(oi.toFixed(2)),
         oiChanged: s.oi_changed || false,
         conf: s.confluence || [
-          cx.alignment === 'BULLISH' ? 'b' : cx.alignment === 'BEARISH' ? 'r' : 'n',
-          cx.alignment === 'BULLISH' ? 'b' : cx.alignment === 'BEARISH' ? 'r' : 'n',
-          cx.alignment === 'BULLISH' ? 'b' : cx.alignment === 'BEARISH' ? 'r' : 'n'
+          mapDir(cx.state_15m || cx.alignment),
+          mapDir(cx.state_1h || cx.alignment),
+          mapDir(cx.state_day || cx.alignment)
         ],
-        score: s.score || 0,
+        score: 0,
         sp,
         hasOptionGain: (s.contracts && s.contracts.length > 0) || (s.best_gain || s.gain_pct || 0) > 0,
         contracts: s.contracts || [],
         isFhSpurt,
         isRvolHigh,
       };
+      row.score = calcScore(row);
+      return row;
     });
+  }
+
+  function calcScore(s) {
+    let sc = 0;
+    const conf = s.conf || ['n', 'n', 'n'];
+    const dir = conf[0] !== 'n' ? conf[0] : (conf[1] !== 'n' ? conf[1] : (conf[2] !== 'n' ? conf[2] : ((s.spot || 0) >= 0 ? 'b' : 'r')));
+    if (dir !== 'n' && conf[0] === dir && conf[1] === dir && conf[2] === dir) sc += 3;
+    else if (conf.filter(c => c === dir && c !== 'n').length >= 2) sc += 1;
+    if ((s.oiChg || 0) >= 20) sc += 2; else if ((s.oiChg || 0) >= 10) sc += 1;
+    if ((s.rvol || 0) >= 5) sc += 2; else if ((s.rvol || 0) >= 2) sc += 1;
+    if ((s.fhS || 0) >= 5) sc += 1;
+    const isBull = dir === 'b' || (s.spot || 0) > 0;
+    const isBear = dir === 'r' || (s.spot || 0) < 0;
+    if (isBull && s.futBU === 'LB') sc += 1;
+    if (isBear && s.futBU === 'SB') sc += 1;
+    if (isBull && (s.dxcnt || 0) > 0) sc += 1;
+    if (isBear && (s.dxcnt || 0) < 0) sc += 1;
+    return Math.min(10, Math.max(0, sc));
   }
 
   function mapDir(v) {
@@ -215,7 +235,15 @@
     let bulls = [], bears = [];
     symSet.forEach(k => {
       const item = crosses[k] || {};
-      const stk = stocks.find(s => s.sym === k) || {};
+      const stk = stocks.find(s => s.sym === k);
+      if (stk) {
+        stk.conf = [
+          mapDir(item.state_15m || item.alignment),
+          mapDir(item.state_1h || item.alignment),
+          mapDir(item.state_day || item.alignment)
+        ];
+        stk.score = calcScore(stk);
+      }
       const states = [item.state_5m, item.state_15m, item.state_1h, item.state_day];
       const bullCount = states.filter(s => String(s).toLowerCase().includes('bull')).length;
       const bearCount = states.filter(s => String(s).toLowerCase().includes('bear')).length;
@@ -229,11 +257,11 @@
       else if (hasBearCross) isBull = false;
       else if (item.alignment === 'bullish' || item.alignment === 'BULLISH') isBull = true;
       else if (item.alignment === 'bearish' || item.alignment === 'BEARISH') isBull = false;
-      else if (stk.futBU === 'LB' || stk.futBU === 'SC' || (stk.spot || 0) > 0) isBull = true;
-      else if (stk.futBU === 'SB' || stk.futBU === 'LU' || (stk.spot || 0) < 0) isBull = false;
+      else if (stk && (stk.futBU === 'LB' || stk.futBU === 'SC' || (stk.spot || 0) > 0)) isBull = true;
+      else if (stk && (stk.futBU === 'SB' || stk.futBU === 'LU' || (stk.spot || 0) < 0)) isBull = false;
       else isBull = bullCount >= bearCount;
 
-      const chgPct = stk.spot ?? item.spot_change_pct ?? item.change_pct ?? 0;
+      const chgPct = (stk ? stk.spot : null) ?? item.spot_change_pct ?? item.change_pct ?? 0;
       const chgStr = `${chgPct >= 0 ? '+' : ''}${chgPct.toFixed(2)}%`;
       const tags = stk.conf
         ? [stk.conf[0] || 'n', stk.conf[1] || 'n', stk.conf[2] || 'n', isBull ? 'b' : 'r']
@@ -301,6 +329,7 @@
       bb_squeezes: crossRes.bb_squeezes || breakouts.bb_squeezes || [],
       ema_coils: crossRes.ema_coils || breakouts.ema_coils || []
     };
+    stocks = stocks;
   }
 
   let liveBreakoutData = { triggered_alerts: [], collision_alerts: [], bb_squeezes: [], ema_coils: [] };

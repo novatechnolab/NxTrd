@@ -29,3 +29,16 @@
   3. **Explicit Confirmation:** Require dedicated user confirmation specifically acknowledging the backend modification reasoning before executing any changes to existing NextGen backend files.
 
 - **Zero Mock / Zero Synthetic Data Discipline (Universal — No Exceptions Across All Features):** Under no circumstances shall mock, synthetic, dummy, simulated fallback data, placeholder values, or mathematical sine waves be displayed anywhere in the application for ANY feature (including Master Board, Alert Feed, charts, PreCross, OI Heatmap, Futures Buildup, Max Pain, Screener, Analytics, Portfolio, etc.). If data is missing, incomplete, offline, or an API/backend error occurs, the UI MUST explicitly display a clear, prominent error message indicating the exact failure reason (e.g., `⚠️ No data available for {FEATURE/SYMBOL}. Check backend connection or Kite session.`) and clear the visualization. Fabricating fallback values or simulated curves to mask missing data is strictly prohibited across all features without exception.
+
+- **Full-Bleed Page Layout Standard (All New Pages — No Exceptions):** Every new route/page added to NextGen MUST follow the full-bleed layout pattern established by OI Spurt Scanner and 360° Command Center. This is the mandatory standard going forward:
+  1. **No top header bar:** The global Topbar (showing "Settings" or route title) must NOT appear. Register the route in `+layout.svelte` `isFullBleed` condition so `isFullBleed = true` for the new route.
+  2. **Auto-hide global nav sidebar:** The global `<Sidebar>` must use `isAutoHide={isFullBleed}` and slide in only when the user hovers the left 16px edge trigger zone.
+  3. **Zero padding on page wrapper:** `page-wrapper.full-bleed` already enforces `padding: 0; margin: 0`. Do not add any outer padding or margin inside the page component.
+  4. **100% viewport usage:** The page must fill `100vw × 100vh` with `overflow: hidden` at the layout level. Internal panels may have their own scroll.
+  5. **In-page left panels are always visible:** In-page sidebars/left panels (e.g., stock list, filter panel) are static layout elements (`flex-shrink: 0`, normal flow). They do NOT auto-hide. Only the **global Nxtrd nav sidebar** auto-hides on full-bleed routes.
+  6. **Only the global nav sidebar auto-hides:** The `isFullBleed` flag in `+layout.svelte` controls `isAutoHide` on the global `<Sidebar>` component exclusively. In-page content panels are always rendered.
+  7. **Implementation checklist for every new page:**
+     - Add route to `isFullBleed` reactive in `frontend/src/routes/+layout.svelte`
+     - Page root element: `display: flex; flex-direction: column; height: 100vh; overflow: hidden`
+     - In-page left panel (if any): `width: Npx; flex-shrink: 0; overflow: hidden` — static, always visible
+     - No `<svelte:head>` title bar padding; manage title only via `<svelte:head><title>…</title></svelte:head>`

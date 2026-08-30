@@ -1,5 +1,36 @@
 # TradeSignal NextGen — Change Log
 
+## 2026-08-30 — Master Board Score Execution & Reactivity Fix
+
+**Goal:** Eliminate unreachable dead code in `mapStocks` so `calcScore(row)` executes for every stock, and ensure Svelte reactive UI updates when live crossover stream updates are processed.
+
+**Files Changed:**
+- `NextGen/frontend/src/routes/360-command-center/+page.svelte` — Replaced early object return with `const row = { ... }` prior to `row.score = calcScore(row)`, and added `stocks = stocks;` at the end of `applyCrossoverData(crossRes)`.
+- `NextGen/frontend/dist/` — Rebuilt and verified full static distribution bundle.
+
+---
+
+## 2026-08-30 — Dynamic Multi-Factor SCORE Calculation for 360° Master Board
+
+**Goal:** Restore the 0–10 composite multi-factor score calculation (`calcScore`) in `360-command-center` so the Master Board displays active scores, color badges (A/B/C), and score-intensity row glows instead of showing zero.
+
+**Files Changed:**
+- `NextGen/frontend/src/routes/360-command-center/+page.svelte` — Implemented `calcScore(s)` incorporating timeframe confluence, OI intensity, RVOL, Fast Hurdle, Futures Buildup (`LB`/`SB`), and DXCount direction alignment, calculating `score` on each row during initial mapping and subsequent crossover stream updates.
+- `NextGen/frontend/dist/` — Rebuilt and updated pre-compiled static distribution bundle.
+
+---
+
+## 2026-08-30 — Standalone New-Tab Navigation for 360° Command Center & OI Spurt Scanner
+
+**Goal:** Allow 360° Command Center and OI Spurt Scanner to open in dedicated browser tabs directly when clicked from the left navigation bar, rendering pure standalone trading workspaces with no left menu bar or edge hover triggers.
+
+**Files Changed:**
+- `NextGen/frontend/src/lib/components/Sidebar.svelte` — Added `newTab: true` to `360-command-center` and `oi-spurt-scanner` route definitions, and updated `navigate(item)` to dispatch `window.open('/' + item.id, '_blank')`.
+- `NextGen/frontend/src/routes/+layout.svelte` — Omitted `<Sidebar>` completely and eliminated `edge-trigger-zone` hover detector when `isFullBleed` is active (`/360-command-center` and `/oi-spurt-scanner`).
+- `NextGen/frontend/dist/` — Rebuilt and updated pre-compiled static distribution bundle.
+
+---
+
 ## 2026-08-30 — Dependent SQLite Tables Schema Initialization Fix
 
 **Goal:** Ensure all dependent snapshot, alert history, and OI spurt tables (`fno_futures_buildup_snapshot`, `fno_gainers_snapshots`, `premium_spike_alerts`, `live_breakout_alerts`, `oi_spurt_log`) are created during `init_db()` and in `setup_termux.sh`.
@@ -138,3 +169,39 @@
 - `NextGen/backend/routers/analytics.py` — Wired `GET /live-breakouts` to call `EmaAgent.get_live_breakouts()` directly.
 - `NextGen/frontend/src/routes/360-command-center/+page.svelte` — Extracted `triggered_alerts` from `/api/live-breakouts` and passed `breakoutAlerts` to `<AlertFeed>`.
 - `NextGen/frontend/src/routes/360-command-center/_components/AlertFeed.svelte` — Bound `breakoutGroups` to `breakoutAlerts`, formatting price moves (`Mv +X.XX%`), volume ratios (`Vol X.Xx`), exact event timestamps, and grade tags.
+
+---
+
+## 2026-08-30 — UI-14: OI Spurt Scanner
+
+**Session goal:** Build the OI Spurt Scanner page in NextGen, above the 360° Command Center in the sidebar.
+
+**Files created:**
+- `frontend/src/routes/oi-spurt-scanner/+page.svelte` — main orchestrator
+- `_components/LeftPanel.svelte` — stock list, OI% slider, 60s auto-refresh
+- `_components/TabBar.svelte` — multi-tab navigation
+- `_components/EmptyState.svelte` — empty state placeholder
+- `_components/DetailView.svelte` — full 6-section detail panel (stat strip, 3-layer analytics, strike tables, retail action, synergy, heatmap, conviction)
+- `_components/OIHeatmap.svelte` — 11-col chain heatmap table, ATM/MaxPain highlights, dual-side state panel
+- `_components/TransitionConviction.svelte` — composite score gauge, ATM±3 table, wall strength registry
+- `_components/AiAnalysisPanel.svelte` — collapsible AI analysis, purple gradient button, Gemini POST endpoint
+- `_components/ToastContainer.svelte` — fixed toast notifications with 5s auto-dismiss
+
+**Summary:** Full pixel-matched port of `oi-spurt-scanner.html` reference (2897 lines). Dark left panel + light right panel theme, JetBrains Mono + Syne fonts, all 4 API endpoints wired (spurt list, symbol detail, AI analyze, equity search). Build: ✓ 3.24s zero errors. Agent reuse: OiTransitionAgent (no new backend code).
+
+---
+
+## 2026-08-30 — Full-Bleed Layout Standard + OI Spurt UI Fixes
+
+**Session goal:** Enforce full-bleed layout for OI Spurt Scanner; codify as mandatory rule for all future pages.
+
+**Files changed:**
+- `frontend/src/routes/+layout.svelte` — Extended `isFullBleed` condition to include `/oi-spurt-scanner`; Topbar hidden, sidebar auto-hides, zero padding on all full-bleed routes
+- `frontend/src/routes/oi-spurt-scanner/_components/LeftPanel.svelte` — Converted to `position: fixed` overlay with `translateX(-100%)` default; 10px invisible edge-trigger strip; slides in on hover, out on mouse leave (250ms debounce)
+- `frontend/src/routes/oi-spurt-scanner/+page.svelte` — Right panel `width: 100%` (LeftPanel now out of layout flow); search error message instead of hardcoded fallback
+- `backend/routers/instruments.py` — Added `/equity-list` route (same shape as legacy server.py L3410)
+- `backend/routers/oi.py` — Added `POST /oi/symbol/{symbol}/ai-analyze` route
+- `backend/agents/oi_transition_agent.py` — Added `ai_analyze()` method (Gemini API, ports legacy oi_spurt_routes.py L1901)
+- `.agents/AGENTS.md` — **Full-Bleed Page Layout Standard rule** added: mandatory for all future NextGen pages
+
+**Summary:** All 4 OI Spurt Scanner API endpoints now wired and verified. Full-bleed + auto-hide left panel pattern set as universal standard for all new pages.

@@ -23,10 +23,10 @@
         { id: 'smc-dashboard',         label: 'SMC Dashboard',         icon: '🎯' },
         { id: 'apex-intraday',         label: 'APEX Intraday',         icon: '⚡' },
         { id: 'fno-trap-dashboard',    label: 'FNO Trap Dashboard',    icon: '🚨', hasChevron: true },
-        { id: '360-command-center',    label: '360° Command Center',   icon: '🤖' },
+        { id: '360-command-center',    label: '360° Command Center',   icon: '🤖', newTab: true },
         { id: 'premium-gainers-board', label: 'Premium Gainers Board', icon: '🏆' },
         { id: 'premium-spike-alerts',  label: 'Premium Spike Alerts',  icon: '🔴', hasChevron: true },
-        { id: 'oi-spurt-scanner',      label: 'OI Spurt Scanner',      icon: '🔥', hasChevron: true },
+        { id: 'oi-spurt-scanner',      label: 'OI Spurt Scanner',      icon: '🔥', hasChevron: true, newTab: true },
         { id: 'fno-synergy-scanner',   label: 'F&O Synergy Scanner',   icon: '⚡', hasChevron: true },
         { id: 'market-profiler',       label: 'Market Profiler',       icon: '📊' },
         { id: 'watchlist',             label: 'Watchlist',             icon: '⭐' },
@@ -71,8 +71,12 @@
     }
   ];
 
-  function navigate(id) {
-    onNavigate(id);
+  function navigate(item) {
+    if (item.newTab) {
+      window.open(`/${item.id}`, '_blank');
+    } else {
+      onNavigate(item.id);
+    }
   }
 </script>
 
@@ -114,7 +118,7 @@
       {#each section.items as item}
         <button
           class="nav-item {activeRoute === item.id ? 'active' : ''}"
-          on:click={() => navigate(item.id)}
+          on:click={() => navigate(item)}
         >
           <span class="nav-icon">{item.icon}</span>
           <span class="nav-label">{item.label}</span>

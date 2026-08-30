@@ -156,3 +156,27 @@ async def oi_symbol_detail(
     """
     agent = _get_oi_agent(request)
     return await agent.get_symbol_detail(symbol)
+
+
+# ── AI Heatmap Analysis ─────────────────────────────────────────────────────
+
+@router.post("/oi/symbol/{symbol}/ai-analyze", tags=["OI"])
+async def oi_ai_analyze(
+    symbol: str,
+    request: Request,
+    payload: Dict[str, Any] = None,
+) -> Dict[str, Any]:
+    """
+    Analyze OI Chain Heatmap for a symbol using Gemini AI.
+    Request body: { chain_data, pcr, spot, max_pain, straddle, expiry, atm }
+    Returns: { ok: true, analysis: "<markdown>" }
+    Reference: oi_spurt_routes.py L1901 ai_analyze_heatmap()
+    """
+    agent = _get_oi_agent(request)
+    body = payload or {}
+    try:
+        body_raw = await request.json()
+        body = body_raw
+    except Exception:
+        pass
+    return await agent.ai_analyze(symbol, body)

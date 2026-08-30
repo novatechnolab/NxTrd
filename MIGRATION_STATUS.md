@@ -82,10 +82,10 @@ Browser (SvelteKit, laptop + mobile parity)
 | UI-8 | SMC Dashboard | ⬜ TODO |
 | UI-9 | APEX Intraday | ⬜ TODO |
 | UI-10 | FNO Trap Dashboard | ⬜ TODO |
-| UI-11 | 360° Command Center | ⬜ TODO |
+| UI-11 | 360° Command Center | ✅ DONE |
 | UI-12 | Premium Gainers Board | ⬜ TODO |
 | UI-13 | Premium Spike Alerts | ⬜ TODO |
-| UI-14 | OI Spurt Scanner | ⬜ TODO |
+| UI-14 | OI Spurt Scanner | ✅ DONE |
 | UI-15 | F&O Synergy Scanner | ⬜ TODO |
 | UI-16 | Market Profiler | ⬜ TODO |
 | UI-17 | Watchlist | ⬜ TODO |
@@ -185,3 +185,45 @@ fetchEMAConv (30s) → /api/ema_convergence_watchlist
 
 ### Agent Reuse Decision
 All backend data served by existing agents: BoardAgent, PremiumSpikeAgent, EmaAgent, MarketAgent, OiTransitionAgent — no new agents created.
+
+---
+
+## 2026-08-30 — UI-14: OI Spurt Scanner (Full Build)
+
+### Status: COMPLETE ✅
+
+### Files Created
+- `frontend/src/routes/oi-spurt-scanner/+page.svelte` — Orchestrator: search, tab management, left/right pollers, market lifecycle watcher, toast system
+- `_components/LeftPanel.svelte` — Stock list with OI% slider (1–20%), 60s countdown, source indicator (NSE/Kite), proportional green gradient bars
+- `_components/TabBar.svelte` — Multi-tab nav with close buttons, active accent border
+- `_components/EmptyState.svelte` — Center placeholder when no tab open
+- `_components/DetailView.svelte` — Full 6-section detail: stat strip (LTP/OI%/MaxPain/PCR/Pivots), F&O 3-Layer Analytics (L1 Futures/L2 PCR/L3 ATM±5), Strike tables (CE wall / PE wall), Retail Action & H-Action, OI Chain Heatmap, Transition Conviction
+- `_components/OIHeatmap.svelte` — Full chain table (11 cols), ATM/MaxPain row highlighting, CE/PE heat colouring, dual-side state panel, tick-by-tick arrows
+- `_components/TransitionConviction.svelte` — Composite score gauge slider, ATM±3 strike table, Wall Strength Registry
+- `_components/AiAnalysisPanel.svelte` — Collapsible purple gradient panel, Gemini AI analysis, markdown rendering, per-tab caching
+- `_components/ToastContainer.svelte` — Fixed top-right toasts, 5s auto-dismiss with shrinking progress bar
+
+### Design Tokens
+Dark panel: `--bg:#08090f, --accent:#00e5ff, --green:#00e676, --red:#ff3d71`
+Right panel light override: `--bg:#f0f4f8, --text:#0f172a, --accent:#0284c7`
+Fonts: JetBrains Mono (body) + Syne (headings/symbols). Exact-matched to reference `oi-spurt-scanner.html`.
+
+### APIs wired
+- loadSpurt (60s auto / slider debounce) → `/api/oi/spurt?min_pct={n}`
+- fetchDetail (15s per tab) → `/api/oi/symbol/{symbol}`
+- AI analysis (on-demand) → `POST /api/oi/symbol/{symbol}/ai-analyze`
+- Search → `/api/equity-list`
+
+### Build: ✓ built in 3.24s (no errors)
+
+### Agent Reuse Decision
+All data served by existing `OiTransitionAgent` (NextGen backend `oi.py`). No new agents or backend changes required.
+
+---
+
+## 2026-08-30 — Standalone New-Tab Navigation Update
+
+- Updated [Sidebar.svelte](file:///home/rajk/Downloads/TradeSignal005/NextGen/frontend/src/lib/components/Sidebar.svelte) with `newTab: true` for `360-command-center` and `oi-spurt-scanner`, opening them via `window.open` in separate tabs.
+- Updated [+layout.svelte](file:///home/rajk/Downloads/TradeSignal005/NextGen/frontend/src/routes/+layout.svelte) to omit `<Sidebar>` and `edge-trigger-zone` completely on standalone full-bleed routes.
+- Frontend build verified: `✓ built in 7.16s` and updated `dist/`.
+
